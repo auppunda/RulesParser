@@ -1,0 +1,66 @@
+1. The convert grammar function took me a long time to figure out due to
+me being really confused about currying. The implementation basically uses
+a function that returns another function with one of the inputs missing.
+The input missing is the nonterminal that the user wants to use. The getL
+function finds the right sequence given the nonterminal, and in the orignal
+function we just don't specify the nonterminal until runtime. This gets
+the output that we want.
+
+2. The parse_prefix program starts with the first expression and tries to
+apply rules in order until it finds a way to get to the terminal output(frag).
+It uses three recursive functions to find the right derivation. The first
+recursion function tests a given rule to see if it can find the way to get
+to terminals while the second function tests a given item. The third tests a
+new item with a new set of rules, and tries to apply the new set of rules to
+what is preexisting.
+
+Intuition for parse_prefix
+I realized that it would have to test rules from left to right, until it found
+a case that works. This meant it would have to backtrack, and if it tried a
+new rule for a new expression it has to remember to try to old rule when
+it is done with the new rule. This is the intuition for keeping a list of
+the running rules. This list starts of empty but the rule that
+is applied is appended to the list so that it can always backtrack
+its way to an onld nonterminal that it encountered before. It also would
+have to have a function that parses through one rule and one that parses
+through the rule set. This is what checkrule and checkHigh do respectively.
+If checkrule for the first rule doesn't return anything, checkHigh moves onto
+the next rule, since the spec wanted to go to always try the first rule first.
+This took many iterations to develop this intuition, and I started out with
+an program that printed out the wrong derivation, since I didn't completely
+backtrack my way back to the old rule, and just ran it on the new rule. To
+fix this, I added a variable rule that keeps track of nonterminals that
+need to be tested. This might not be the best practice, but it worked pretty
+well as my code ended up passing all the tests. Adding that new variable 
+allowed me to keep track of all the nonterminals that are still needed to
+be tested to make sure that I indeed end up with only terminals.
+
+How it works
+Parse Prefix starts with a start expression and recursively looks through
+all the rules to reach a terminal expression. To do this my implementation
+has three recursive functions, one to look through all the rules for a
+particular nonterminal, one to look through one specific rule, and one
+to look at a specific item and mutate the ongoing list. These
+functions mutate the list and test whether the recursive call results
+in the right fragment. If not it ends that recursive call and backtracks
+to a derivation that it hasn't tried yet.
+
+Weaknesses
+The main weakness of this program would be blind-alley rules. This would not
+work with a blind alley rules since it would get stuck in an infinite loop.
+If the first rule expecially was a blind alley rule it would get stuck trying
+to use it since there is never a point where it can reach the end. If each
+rule it tried was also a blind alley rule it would continue on forever.
+
+let random_grammar =
+ (E,
+ 	function
+ 	| E ->  [[N E]]
+ 	| R -> [[T"+"; N PE]]
+ 	| PE -> [[T"-"]])
+(* Tests the basic workings of the parse_prefix function.
+It is a simple grammar*)
+ let test_1 = (parse_prefix random_grammar accept_all ["+"; "-"])
+
+This example goes on for ever. This is a trivial example but it
+shows the weakness of the parse_prefix function.
